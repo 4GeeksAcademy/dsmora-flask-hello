@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, States
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -35,47 +35,48 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-
-@app.route('/user', methods=['POST'])
-def post_user():
-    body = request.get_json()
-    user = User(email = body['email'], password = body['password'], is_active = body['is_active'])
-    db.session.add(user)
-    try: 
-        db.session.commit()
-        return jsonify({'response': 'ok'}), 200
-    except: 
-        return 'error al crear el usuario', 400
-        
-
 @app.route('/users', methods=['GET'])
 def get_users():
-    all_users = User.query.all()
+    all_users = User.query.all() ## tengo una lista 
     all_users = list(map(lambda x: x.serialize(), all_users))
 
+    print((all_users))
     return jsonify(all_users), 200
 
-@app.route('/users/<email>', methods=['GET'])
-def get_user(email):
-    all_users = User.query.filter_by(email = email)
-    all_users = list(map(lambda x: x.serialize(), all_users))[0]
-    return jsonify(all_users), 200
-    
-@app.route('/users/<int:id>', methods=['PUT'])
-def update_user(id):
+@app.route('/states', methods=['GET'])
+def get_states():
+    all_states = States.query.all()
+    all_states = list(map(lambda x: x.serialize(), all_states))
+
+    print(all_states)
+
+    return jsonify(all_states), 200
+
+@app.route('/user', methods=['POST'])
+def add_user():
     body = request.get_json()
-    user = User.query.get(id)
-    user.email = body['email']
-    db.session.commit()
-    return 'ok', 201
+    user = User(username = body['username'], postal_code = body['postal_code'])
+    try: 
+        db.session.add(user)
+        db.session.commit()
+        return jsonify(user.serialize()), 200
+    except: 
+        return jsonify({ 'err_msg': 'can`t add user'}), 400
     
-@app.route('/users/<int:id>', methods=['DELETE'])
+@app.route('/user/<int:id>', methods=['DELETE'])
 def delete_user(id):
     user = User.query.get(id)
     db.session.delete(user)
     db.session.commit()
-    return 'ok', 204
-    
+
+    return jsonify({}), 204
+
+# @app.route('/users', methods=['GET'])
+# def get_users():
+#     all_users = User.query.all()
+#     all_users = list(map(lambda x: x.serialize(), all_users))
+
+#     return jsonify(all_users), 200
 
 
 # this only runs if `$ python src/app.py` is executed
